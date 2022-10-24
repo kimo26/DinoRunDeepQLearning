@@ -6,4 +6,5 @@ Also if you want me to add comments to better explain my code let me know.
 For my resources check out:
 
 http://cs229.stanford.edu/proj2016/report/KeZhaoWei-AIForChromeOfflineDinosaurGame-report.pdf
+
 https://keras.io/examples/rl/deep_q_network_breakout/
