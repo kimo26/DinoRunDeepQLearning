@@ -11,6 +11,7 @@ class game_state:
         gameover = False
         if action == 1:
             self.dino.jump()
+            rew = 0.1*score/11
         state = self.game.getScreen()
         if self.dino.isCrashed():
             gameover = True

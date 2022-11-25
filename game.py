@@ -19,10 +19,11 @@ class game:
         chrome_options = Options()
         chrome_options.add_argument("disable-infobars")
         chrome_options.add_argument("--mute-audio")
-        self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()),options=chrome_options)
+        self.driver = webdriver.Chrome(ChromeDriverManager().install(),chrome_options=chrome_options)
         self.driver.get('https://dino-chrome.com/en')
         self.action_chains = ActionChains(self.driver)
         self.driver.execute_script("Runner.config.ACCELERATION=0")
+        self.driver.execute_script("Runner.config.SPEED = 12")
     '''
     def down(self):
         self.action_chains.key_down(Keys.ARROW_DOWN).perform()

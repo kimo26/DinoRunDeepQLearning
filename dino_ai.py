@@ -69,7 +69,7 @@ class ai:
 
         gamma = 0.99
         epsilon = 0.1
-        epsilon_min = 0.00001
+        epsilon_min = 0.0001
         epsilon_max = 0.1
         epsilon_interval = (
             epsilon_max - epsilon_min
@@ -91,7 +91,7 @@ class ai:
         running_score=0
         episode_count = 0
         
-        epsilon_random_frames = 10
+        epsilon_random_frames = 500
         epsilon_greedy_frames = 10000.0
         max_memory_length = 500000
         
