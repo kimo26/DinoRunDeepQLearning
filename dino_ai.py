@@ -1,8 +1,9 @@
 import numpy as np
-from tensorflow.keras import layers
-from tensorflow import keras
+from tensorflow.keras.layers import Conv2D,Dense,Flatten,Input
 import tensorflow as tf
-from tensorflow.keras.models import load_model
+from tensorflow.keras.models import load_model,Model
+from tensorflow.keras.losses import Huber
+from tensorflow.keras.optimizers import Adam
 
 class ai:
     def __init__(self,game,game_state):
@@ -12,23 +13,23 @@ class ai:
         self.num_actions=2
         
     def create_q_model(self):
-        inputs = layers.Input(shape=(84, 100, 4,))
+        inputs = Input(shape=(60, 120, 4,))
 
-        layer1 = layers.Conv2D(32, 8, strides=4, activation="relu")(inputs)
-        layer2 = layers.Conv2D(64, 4, strides=2, activation="relu")(layer1)
-        layer3 = layers.Conv2D(64, 3, strides=1, activation="relu")(layer2)
+        layer1 = Conv2D(32, 8, strides=4, activation="relu")(inputs)
+        layer2 = Conv2D(64, 4, strides=2, activation="relu")(layer1)
+        layer3 = Conv2D(64, 3, strides=1, activation="relu")(layer2)
 
-        layer4 = layers.Flatten()(layer3)
+        layer4 = Flatten()(layer3)
 
-        layer5 = layers.Dense(512, activation="relu")(layer4)
-        action = layers.Dense(self.num_actions, activation="linear")(layer5)
+        layer5 = Dense(512, activation="relu")(layer4)
+        action = Dense(self.num_actions)(layer5)
 
-        return keras.Model(inputs=inputs, outputs=action)
+        return Model(inputs=inputs, outputs=action)
 
     def test(self,name):
         model = self.create_q_model()
-        optimizer = keras.optimizers.Adam(learning_rate=0.0002, clipnorm=1.0)
-        loss_function = keras.losses.Huber()
+        optimizer = Adam(learning_rate=0.00025, clipnorm=1.0)
+        loss_function = Huber()
         
         model.load_weights(f'{name}')
         model.compile(loss=loss_function,optimizer=optimizer)
@@ -50,7 +51,7 @@ class ai:
 
             if done:
                 self.game.restart()
-                frame,episode_reward,_ = self.game_state.get(0)
+                frame,episode_reward,_ = self.game_state.get(1)
                 state = np.stack((frame,frame,frame,frame),axis=2)
                 state = state.reshape(state.shape[0],state.shape[1],state.shape[2])
             
@@ -76,8 +77,8 @@ class ai:
         )
         
         batch_size = 32
-        optimizer = keras.optimizers.Adam(learning_rate=0.00025, clipnorm=1.0)
-        loss_function = keras.losses.Huber()
+        optimizer = Adam(learning_rate=0.00025, clipnorm=1.0)
+        loss_function = Huber()
         
         action_history = []
         state_history = []
@@ -107,7 +108,7 @@ class ai:
             state = np.stack((frame,frame,frame,frame),axis=2)#stack of 4 init frames to start episode 
             state = state.reshape(state.shape[0],state.shape[1],state.shape[2])
             done = False
-
+            
             while not done:
                 frame_count+=1
                 if frame_count < epsilon_random_frames or epsilon > np.random.rand(1)[0]:
@@ -172,7 +173,6 @@ class ai:
                     del done_history[:1]
 
             episode_score_history.append(self.game.getScore())
-            self.game.restart()
                     
             episode_reward_history.append(episode_reward)
             
@@ -182,11 +182,7 @@ class ai:
             running_reward = np.mean(episode_reward_history)
             running_score = np.mean(episode_score_history)
             episode_count += 1
+            #print(f'episode {episode_count} frames {frame_count} score {episode_score_history[-1]}')
+            self.game.restart()
 
-            '''
-            if running_score > 1000: 
-                print("Solved at episode {}!".format(episode_count))
-                model.save_weights("model_solved_{:.2f}f.h5".format(running_score))
 
-                break
-            '''

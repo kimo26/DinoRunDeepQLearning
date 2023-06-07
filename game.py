@@ -9,64 +9,84 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from io import BytesIO
 from PIL import Image
+import matplotlib.pyplot as plt
 from time import sleep
 import base64
 import numpy as np
 import cv2
 
+
 class game:
+    """
+    Class to open the Chrome Dino Game and interact with it
+    """
     def __init__(self):
+        """
+        Initializes the webdriver, navigates to the game page and sets game parameters.
+        """
         chrome_options = Options()
         chrome_options.add_argument("disable-infobars")
         chrome_options.add_argument("--mute-audio")
-        self.driver = webdriver.Chrome(ChromeDriverManager().install(),chrome_options=chrome_options)
+        self.driver = webdriver.Chrome(ChromeDriverManager().install(),options=chrome_options)
+        self.driver.set_window_size(700, 700)
         self.driver.get('https://dino-chrome.com/en')
         self.action_chains = ActionChains(self.driver)
-        self.driver.execute_script("Runner.config.ACCELERATION=0")
-        self.driver.execute_script("Runner.config.SPEED = 12")
-    '''
-    def down(self):
-        self.action_chains.key_down(Keys.ARROW_DOWN).perform()
-    '''
+        self.driver.execute_script("Runner.instance_.setSpeed(6)")
+        self.leading_len = len("data:image/png;base64,")
     def up(self):
+        """
+        Makes the dinosaur jump by sending an arrow up key event.
+        """
         self.action_chains.key_down(Keys.ARROW_UP).perform()
-    '''
-    def isPaused(self):
-        return self.driver.execute_script("return Runner.instance_.paused")
-    '''
+
     def isCrashed(self):
+        """
+        Checks if the dinosaur has crashed into an obstacle.
+
+        Returns:
+            bool: True if the dinosaur has crashed, False otherwise.
+        """
         return self.driver.execute_script("return Runner.instance_.crashed")
-    '''
-    def isPlaying(self):
-        return self.driver.execute_script("return Runner.instance_.isRunning()") and self.driver.execute_script("return Runner.instance_.started")
-    '''
+
     def getScore(self):
+        """
+        Gets the current score of the game.
+
+        Returns:
+            int: Current score.
+        """
         return int(''.join(self.driver.execute_script("return Runner.instance_.distanceMeter.digits")))
+
     def restart(self):
+        """
+        Restarts the game by executing the restart function in the game's JavaScript.
+        """
         self.driver.execute_script('Runner.instance_.restart()')
-        sleep(0.25)
-    '''
-    def stop(self):
-        self.driver.execute_script('Runner.instance_.stop()')
-    def play(self):
-        self.driver.execute_script('Runner.instance_.play()')
-    '''
-    
+        sleep(0.2)
+
     def getScreen(self):
-        canvas_details = self.driver.execute_script("return Runner.instance_.canvas.getBoundingClientRect()")
-        actual_width = self.driver.execute_script("return Runner.instance_.canvas.width")
-        dino_width = self.driver.execute_script("return Runner.instance_.tRex.config.WIDTH")
-        xPos = self.driver.execute_script("return Runner.instance_.tRex.xPos")
-        frame = self.driver.get_screenshot_as_png()
-        frame_img = skimage.io.imread(BytesIO(frame))[:,:,:3]
-        frame_img = frame_img[int(canvas_details['y']):int(canvas_details['height']+canvas_details['y']),int(canvas_details['x']+(int(xPos)*(int(canvas_details['width'])/int(actual_width)))):int((canvas_details['width']/2)+canvas_details['x'])]
-        frame_img = skimage.color.rgb2gray(frame_img)
-        frame_img = skimage.transform.resize(frame_img,(84,100))
+        """
+        Takes a screenshot of the game and processes it to be used as input for a neural network.
+
+        Returns:
+            np.array: The processed screenshot.
+        """
+        canvas = 'document.querySelector("#runner > div > canvas")'
+        frame_img = self.driver.execute_script(f'return {canvas}.toDataURL()')
+        frame_img = frame_img[self.leading_len:]
+        frame_img = np.array(Image.open(BytesIO(base64.b64decode(frame_img))))[:,:,:3]
+        frame_img = frame_img[:150,:300]
+        frame_img = cv2.cvtColor(frame_img,cv2.COLOR_BGR2GRAY)
+        frame_img = np.array(Image.fromarray(frame_img).resize((120,60)))
         frame_img = skimage.exposure.rescale_intensity(frame_img,out_range=(0,255))
         im = np.uint8(frame_img)
         im = cv2.Canny(im,threshold1=100,threshold2=200)
         im = np.array(im)
         frame_img = im / 255.
         return frame_img
+
     def close(self):
+        """
+        Closes the webdriver.
+        """
         self.driver.close()
